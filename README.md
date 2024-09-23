@@ -7,7 +7,9 @@ This lab was developed to demonstrate vulnerabilities in the JWT signature syste
 
 [x] - None Attack
 
-[x] - KID Header Injection (SQLi and Path Traversal)
+[x] - KID Header Injection - SQL Injection
+
+[x] - KID Header Injection - Path Traversal
 
 [x] - JKU Header Injection
 
