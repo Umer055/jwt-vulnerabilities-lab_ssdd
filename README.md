@@ -4,13 +4,9 @@ This lab was developed to demonstrate vulnerabilities in the JWT signature syste
 
 ### Implemented vulnerabilities.
 - [x] Weak Secret
-
 - [x] None Attack
-
 - [x] KID Header Injection - SQL Injection and Path Traversal
-
 - [x] JKU Header Injection
-
 - [x] Algorithm Confusion
 
 ### Setup
