@@ -1,6 +1,6 @@
 # JWT Vulnerabilities - Lab
 
-This lab was developed to demonstrate vulnerabilities in the JWT signature system.
+This lab was developed to explain vulnerabilities in the JWT signature system.
 
 ### Implemented vulnerabilities.
 - [x] Weak Secret
@@ -14,10 +14,10 @@ This lab was developed to demonstrate vulnerabilities in the JWT signature syste
 Run the commands below to initialize the lab:
 
 ```
-git clone https://<link-here>
+git clone https://github.com/hakaioffsec/jwt-vulnerabilities-lab.git
 cd jwt-vulnerabilities-lab
-docker build . -t jwt-vuln-lab
-docker run -d -p 8000:8000 -it jwt-vuln-lab
+docker build . -t jwt-vuln-lab-hakai
+docker run -d -p 8000:8000 -it jwt-vuln-lab-hakai
 ```
 
 Accessing the lab:
