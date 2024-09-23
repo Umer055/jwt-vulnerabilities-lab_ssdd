@@ -3,17 +3,15 @@
 This lab was developed to demonstrate vulnerabilities in the JWT signature system.
 
 ### Implemented vulnerabilities.
-[x] - Weak Secret
+- [x] Weak Secret
 
-[x] - None Attack
+- [x] None Attack
 
-[x] - KID Header Injection - SQL Injection
+- [x] KID Header Injection - SQL Injection and Path Traversal
 
-[x] - KID Header Injection - Path Traversal
+- [x] JKU Header Injection
 
-[x] - JKU Header Injection
-
-[x] - Algorithm Confusion
+- [x] Algorithm Confusion
 
 ### Setup
 
