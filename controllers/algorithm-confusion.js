@@ -1,8 +1,10 @@
 const express = require('express');
 const app = express();
 const jwt = require('jsonwebtoken');
-const jwkToPem = require('jwk-to-pem');
 const fs = require('fs');
+const { extractBearerToken, fetchJwksPem } = require('../lib/jwt-utils');
+
+const JKU_WHITELIST = (process.env.JKU_WHITELIST || 'http://127.0.0.1:8000/jwks.json').split(',');
 
 /**
  * @swagger
@@ -30,14 +32,10 @@ const fs = require('fs');
  *               type: string
 */
 app.post('/', async(req,res) => {
-    const token = req.headers['authorization'];
+    const token = extractBearerToken(req);
     if(!token) {
         return res.sendStatus(401);
     }
-
-    const jku_whitelist = [
-        'http://127.0.0.1:8000/jwks.json',
-    ];
 
     try {
         const { header } = jwt.decode(token, { complete: true });
@@ -46,14 +44,11 @@ app.post('/', async(req,res) => {
             return res.sendStatus(401);
         }
 
-        const response = await fetch(header.jku);
-        const jwks = await response.json();
+        const expectedKid = header.kid || null;
+        const publicKey = await fetchJwksPem(header.jku, expectedKid, JKU_WHITELIST);
 
-        const publicKey = jwkToPem(jwks[0]);
-
-        // The application expects the asymmetric algorithm, but the algorithm is controlled by the user.
-        // Outdated "jsonwebtoken" vulnerability
-        const payload = jwt.verify(token, publicKey, { algorithms: header.alg });
+        // Always enforce RS256 for JKU-backed tokens - do not trust header.alg
+        const payload = jwt.verify(token, publicKey, { algorithms: ['RS256'] });
         
         if(payload['admin']) {
             payload['flag'] = 'hakai{alg0r1thm_c0nfus10n_111ssss_0p}'

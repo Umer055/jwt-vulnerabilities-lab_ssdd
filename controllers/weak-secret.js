@@ -1,5 +1,7 @@
 const app = require('express')();
 const jwt = require('jsonwebtoken');
+const { extractBearerToken, HS_SECRET } = require('../lib/jwt-utils');
+const MIN_SECRET_LENGTH = 32;
 
 /**
  * @swagger
@@ -27,22 +29,27 @@ const jwt = require('jsonwebtoken');
  *               type: string
 */
 app.post('/', async(req,res) => {
-    const token = req.headers['authorization'];
-    
+    const token = extractBearerToken(req);
+
     if(!token) {
         return res.sendStatus(401);
     }
 
     try {
-        // Validating JWT signature using weak secret
-        const payload = jwt.verify(token, 'pirates');
-        
+        // Enforce a minimum secret length and use configured secret (do not hard-code)
+        if(!HS_SECRET || HS_SECRET.length < MIN_SECRET_LENGTH) {
+            console.warn('HS secret is missing or too short; refusing to verify');
+            return res.sendStatus(500);
+        }
+
+        const payload = jwt.verify(token, HS_SECRET, { algorithms: ['HS256'] });
+
         if(payload['admin']) {
             payload['flag'] = 'hakai{W34k_s3cr3t_4tt4ck}';
         }
 
         return res.json(payload);
-    
+
     } catch(e) {
         return res.sendStatus(401);
     }
@@ -71,7 +78,13 @@ app.get('/', async(req,res) => {
         admin: false
     };
 
-    const token = jwt.sign(payload, 'pirates');
+    // Use configured HS secret to sign tokens
+    if(!HS_SECRET || HS_SECRET.length < MIN_SECRET_LENGTH) {
+        console.warn('HS secret is missing or too short; cannot sign tokens');
+        return res.status(500).json({ error: 'server misconfiguration' });
+    }
+
+    const token = jwt.sign(payload, HS_SECRET, { algorithm: 'HS256' });
 
     return res.json({ token });
 });

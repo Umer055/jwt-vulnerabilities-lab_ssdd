@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 
 const app = express();
+const { extractBearerToken } = require('../lib/jwt-utils');
 
 /**
  * @swagger
@@ -30,8 +31,7 @@ const app = express();
  *               type: string
 */
 app.post("/", async (req,res) => {
-    let secretKey;
-    const token = req.headers['authorization'];
+    const token = extractBearerToken(req);
 
     if(!token) {
         return res.sendStatus(401);
@@ -40,16 +40,28 @@ app.post("/", async (req,res) => {
     try {
         const { header } = jwt.decode(token, { complete: true });
 
-        if(header.alg.startsWith('HS')) {
-            secretKey = "HS_S3cr3t_k3y";
+        if(!header || !header.alg) return res.sendStatus(401);
+
+        // Explicitly disallow 'none' algorithm
+        if(header.alg.toLowerCase() === 'none') {
+            console.warn('Token uses none algorithm - rejected');
+            return res.sendStatus(401);
         }
 
-        if(header.alg.startsWith('RS')) {
-            secretKey = fs.readFileSync(__dirname + '/../keys/public.pem', 'utf-8');
-        }
+        let payload;
 
-        // Validating JWT signature using undefined secret and user-controlled algorithm.
-        const payload = jwt.verify(token, secretKey, { algorithms: header.alg });
+        // Only accept HS256 or RS256 and verify with the corresponding trusted key
+        if(header.alg === 'HS256') {
+            // Prefer configured secret; fallback to local file only if configured
+            const hs = process.env.JWT_HS_SECRET || 'HS_S3cr3t_k3y';
+            payload = jwt.verify(token, hs, { algorithms: ['HS256'] });
+        } else if(header.alg === 'RS256') {
+            const pub = fs.readFileSync(__dirname + '/../keys/public.pem', 'utf-8');
+            payload = jwt.verify(token, pub, { algorithms: ['RS256'] });
+        } else {
+            // unsupported algorithm
+            return res.sendStatus(401);
+        }
 
         if(payload['admin']) {
             payload['flag'] = 'hakai{N0n3_4tt4ck_1s_c00l}'

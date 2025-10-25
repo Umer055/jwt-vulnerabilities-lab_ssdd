@@ -1,9 +1,15 @@
 const express = require('express');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
+const helmet = require('helmet');
+require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 8000;
+
+// Basic security middleware
+app.use(helmet());
+app.use(express.json());
 
 const swaggerOptions = {
     definition: {

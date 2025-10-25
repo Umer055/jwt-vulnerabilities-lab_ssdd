@@ -1,8 +1,10 @@
 const express = require('express');
 const app = express();
 const jwt = require('jsonwebtoken');
-const jwkToPem = require('jwk-to-pem');
 const fs = require('fs');
+const { extractBearerToken, fetchJwksPem } = require('../lib/jwt-utils');
+
+const JKU_WHITELIST = (process.env.JKU_WHITELIST || 'http://127.0.0.1:8000/jwks.json').split(',');
 
 /**
  * @swagger
@@ -30,8 +32,8 @@ const fs = require('fs');
  *               type: string
 */
 app.post('/', async(req,res) => {
-    const token = req.headers['authorization'];
-    
+    const token = extractBearerToken(req);
+
     if(!token) {
         return res.sendStatus(401);
     }
@@ -43,15 +45,12 @@ app.post('/', async(req,res) => {
             return res.sendStatus(401);
         }
 
-        // JKU Header without validation (JKU Header Injection vulnerability)
-        const response = await fetch(header.jku);
-        const jwks = await response.json();
+        // Only allow JKU from a trusted whitelist and ensure JWKS contains a valid RSA key
+        const expectedKid = header.kid || null;
+        const publicKey = await fetchJwksPem(header.jku, expectedKid, JKU_WHITELIST);
 
-        // Extracting RSA (public key) from JWK
-        const publicKey = jwkToPem(jwks[0]);
-
-        // Using public key to validate JWT signature
-        const payload = jwt.verify(token, publicKey, { algorithms: 'RS256' });
+        // Using public key to validate JWT signature (force RS256)
+        const payload = jwt.verify(token, publicKey, { algorithms: ['RS256'] });
 
         if(payload['admin']) {
             payload['flag'] = 'hakai{4bus3_jku_t0_sp00f_y0ur_publ1c_k3y}'
